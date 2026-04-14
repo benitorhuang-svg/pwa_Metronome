@@ -117,11 +117,16 @@ export class UIController {
 
   private startUIAnimate(): void {
     if (this.animationFrameId) return;
+    
     const animate = () => {
-      if (this.tuner.isActive) this.updateTunerUI();
-      // You could also add dynamic background breathing here
-      this.animationFrameId = requestAnimationFrame(animate);
+      if (this.tuner.isActive) {
+        this.updateTunerUI();
+        this.animationFrameId = requestAnimationFrame(animate);
+      } else {
+        this.animationFrameId = null;
+      }
     };
+    
     this.animationFrameId = requestAnimationFrame(animate);
   }
 

@@ -18,10 +18,19 @@ export default defineConfig({
           {
             src: 'assets/icon-512.png',
             sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'assets/icon-512.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ],

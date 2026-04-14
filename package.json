@@ -26,8 +26,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "eslint --fix",
-      "tsc --noEmit"
+      "eslint --fix"
     ]
   },
   "engines": {

@@ -1,4 +1,5 @@
 import './styles/main.css';
+import { registerSW } from 'virtual:pwa-register';
 import { Metronome } from './core/Metronome';
 import { Tuner } from './core/Tuner';
 import { UIController } from './components/UIController';
@@ -15,6 +16,9 @@ const bootstrap = () => {
   
   console.info('Metronome Pro: Industrial Atomic Edition (Node 25)');
 };
+
+// Register Service Worker
+registerSW({ immediate: true });
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bootstrap);

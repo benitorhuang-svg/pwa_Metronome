@@ -26,6 +26,6 @@ export default defineConfig({
     })
   ],
   server: {
-    hot: true
+    host: true
   }
 });

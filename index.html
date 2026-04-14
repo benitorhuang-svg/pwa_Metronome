@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Metronome Pro</title>
+    <meta name="theme-color" content="#161e2e">
+    <link rel="apple-touch-icon" href="/assets/icon-512.png">
+    
+    <!-- Fonts are handled by CSS imports or link tags -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="metronome-container">
+        <!-- SHARED: Navigation (Moved to Top) -->
+        <nav class="app-nav">
+            <button id="nav-metronome" class="nav-item active">METRO</button>
+            <button id="nav-tuner" class="nav-item">TUNER</button>
+        </nav>
+
+        <!-- PAGE: METRONOME -->
+        <div id="page-metronome" class="page-content">
+            <div class="header">
+                <div class="logo-group">
+                    <h1>Metronome</h1>
+                    <p>Master of Tempo</p>
+                </div>
+                
+                <div class="time-signature">
+                    <select id="time-signature-select">
+                        <option value="2">2/4</option>
+                        <option value="3">3/4</option>
+                        <option value="4" selected>4/4</option>
+                        <option value="5">5/4</option>
+                        <option value="6">6/8</option>
+                    </select>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L6 6L11 1" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="beat-indicators" id="beat-indicators"></div>
+
+            <div class="bpm-container">
+                <div class="bpm-number" id="bpm-display">52</div>
+                <div class="bpm-label">Beats Per Minute</div>
+            </div>
+
+            <div class="tempo-controls">
+                <button class="control-btn" id="btn-minus" aria-label="Decrease BPM">
+                    <svg width="20" height="4" viewBox="0 0 20 4" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="20" height="4" rx="2" fill="white"/>
+                    </svg>
+                </button>
+                <div class="slider-container">
+                    <input type="range" id="bpm-slider" min="30" max="250" value="52" aria-label="Tempo Slider">
+                </div>
+                <button class="control-btn" id="btn-plus" aria-label="Increase BPM">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect y="8" width="20" height="4" rx="2" fill="white"/>
+                        <rect x="8" width="4" height="20" rx="2" fill="white"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="action-buttons">
+                <button class="tap-btn" id="btn-tap">Tap</button>
+                <button class="play-btn" id="btn-play">
+                    <div id="play-icon" class="icon-play"></div>
+                    <span id="play-text">START</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAGE: TUNER -->
+        <div id="page-tuner" class="page-content hidden">
+            <div class="header">
+                <div class="logo-group">
+                    <h1>Tuner</h1>
+                    <p>Perfect Pitch</p>
+                </div>
+                <button id="btn-tuner-start" class="tuner-start-btn">
+                    <div class="mic-dot"></div>
+                    START MIC
+                </button>
+            </div>
+
+            <div class="tuner-display">
+                <div class="gauge-arc-container">
+                    <svg class="gauge-arc-svg" viewBox="0 0 200 120">
+                        <path class="arc-bg" d="M20,100 A80,80 0 0,1 180,100" />
+                        <path id="arc-active" class="arc-active" d="M20,100 A80,80 0 0,1 100,20" style="opacity: 0;" />
+                        <line x1="100" y1="100" x2="100" y2="40" class="center-line" />
+                    </svg>
+                    <div id="main-needle" class="main-needle" style="transform: translateX(-50%) rotate(-90deg);"></div>
+                    <div id="note-name" class="note-name"></div>
+                </div>
+                <div id="note-cents" class="note-cents">Waiting for input</div>
+            </div>
+
+            <div class="tuner-gauge">
+                <div class="gauge-markers">
+                    <span>-50</span><span>0</span><span>+50</span>
+                </div>
+                <div class="gauge-track">
+                    <div id="tuner-pointer" class="tuner-pointer"></div>
+                </div>
+            </div>
+
+            <div class="tuner-footer">
+                <div class="info-block">
+                    <label>Frequency</label>
+                    <div id="freq-display">0.00 Hz</div>
+                </div>
+                <div class="info-block">
+                    <label>A4 Standard</label>
+                    <div>440 Hz</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHARED: Theme Switcher -->
+        <div class="theme-switcher" id="theme-switcher">
+            <button class="theme-btn active" data-theme="spring" title="Spring" style="background: #22c55e;"></button>
+            <button class="theme-btn" data-theme="pink" title="Cherry Blossom" style="background: #f472b6;"></button>
+            <button class="theme-btn" data-theme="winter" title="Winter" style="background: #bae6fd;"></button>
+            <button class="theme-btn" data-theme="autumn" title="Autumn" style="background: #fbbf24;"></button>
+        </div>
+
+        </div>
+    </div>
+
+    <!-- Application Entry -->
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

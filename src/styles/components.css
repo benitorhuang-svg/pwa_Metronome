@@ -194,14 +194,14 @@ input[type="range"]::-webkit-slider-thumb {
     display: flex;
     justify-content: center;
     gap: 16px;
-    margin-bottom: 40px;
+    margin-bottom: clamp(20px, 5vh, 40px);
     min-height: 20px;
 }
 
 /* Indicators */
 .beat-dot {
-    width: 12px;
-    height: 12px;
+    width: clamp(8px, 2vw, 12px);
+    height: clamp(8px, 2vw, 12px);
     background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     transition: all 0.2s;
@@ -220,7 +220,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .bpm-number {
-    font-size: 140px;
+    font-size: clamp(80px, 30vw, 140px);
     font-weight: 900;
     line-height: 1;
     letter-spacing: -6px;
@@ -228,12 +228,12 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .bpm-label {
-    font-size: 12px;
+    font-size: clamp(10px, 2vw, 12px);
     font-weight: 800;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 3px;
-    margin-bottom: 40px;
+    margin-bottom: clamp(20px, 5vh, 40px);
 }
 
 /* Tuner UI */
@@ -270,8 +270,8 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 48px;
-    padding: 40px 20px;
-    margin-bottom: 48px;
+    padding: clamp(20px, 8vh, 40px) 20px;
+    margin-bottom: clamp(20px, 8vh, 48px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -281,8 +281,9 @@ input[type="range"]::-webkit-slider-thumb {
 
 .gauge-arc-container {
     position: relative;
-    width: 280px;
-    height: 180px;
+    width: 100%;
+    max-width: 280px;
+    aspect-ratio: 280 / 180;
     display: flex;
     align-items: center;
     justify-content: center;

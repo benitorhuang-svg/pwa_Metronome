@@ -1,17 +1,15 @@
 import './styles/main.css';
+import '@fontsource-variable/outfit';
 import { Workbox } from 'workbox-window';
 import { Metronome } from './core/Metronome';
 import { Tuner } from './core/Tuner';
 import { UIController } from './components/UIController';
 
-// Hoisted so the SW waiting handler can check playback state
-let metronome: Metronome;
-
 /**
  * App Bootstrapper
  */
 const bootstrap = () => {
-  metronome = new Metronome();
+  const metronome = new Metronome();
   const tuner = new Tuner();
   
   new UIController(metronome, tuner);
@@ -32,31 +30,9 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     }
   });
 
-  // A new SW has installed and is waiting to activate
-  wb.addEventListener('waiting', () => {
-    const promptUpdate = () => {
-      if (confirm('New version available. Reload to update?')) {
-        // Reload once the new SW takes control
-        const onControlling = () => window.location.reload();
-        wb.addEventListener('controlling', onControlling);
-        wb.messageSkipWaiting();
-      }
-    };
-
-    if (metronome?.isPlaying) {
-      // Poll every second until playback stops, then prompt.
-      // Cap at 5 minutes to ensure the user is never silently stuck on an old version.
-      const MAX_WAIT_MS = 5 * 60 * 1000;
-      const startedAt = Date.now();
-      const pollId = setInterval(() => {
-        if (!metronome.isPlaying || Date.now() - startedAt >= MAX_WAIT_MS) {
-          clearInterval(pollId);
-          promptUpdate();
-        }
-      }, 1000);
-    } else {
-      promptUpdate();
-    }
+  // New SW activated and in control: reload to use the latest cached assets
+  wb.addEventListener('controlling', () => {
+    window.location.reload();
   });
 
   wb.register();

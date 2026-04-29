@@ -2,14 +2,13 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [
     VitePWA({
       // SW is registered manually via workbox-window in main.ts
       injectRegister: false,
-      // 'prompt' keeps the generated SW from auto-calling skipWaiting;
-      // workbox-window sends messageSkipWaiting() when the user confirms.
-      registerType: 'prompt',
+      // 'autoUpdate' makes the new SW automatically skip waiting and take over.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
         name: 'Metronome Pro',
@@ -45,30 +44,7 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        runtimeCaching: [
-          {
-            // Cache Google Fonts CSS
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] }
-            }
-          },
-          {
-            // Cache Google Fonts webfont files
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] }
-            }
-          }
-        ]
-      },
+      workbox: {},
       devOptions: {
         // Keep SW disabled in dev to avoid conflicts with Vite HMR
         enabled: false,

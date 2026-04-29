@@ -17,8 +17,13 @@ export class Tuner {
 
   private readonly NOTE_STRINGS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   private buffer: Float32Array<ArrayBuffer> = new Float32Array(4096);
+  private corrBuffer: Float32Array = new Float32Array(0);
 
   constructor() {}
+
+  public resumeContext(): void {
+    this.audioContext?.resume();
+  }
 
   public async start(): Promise<boolean> {
     try {
@@ -100,7 +105,10 @@ export class Tuner {
     const minLag = Math.floor(sampleRate / 1200);
     const maxLag = Math.min(Math.ceil(sampleRate / 80), SIZE - 1);
 
-    const c = new Float32Array(maxLag + 1);
+    if (this.corrBuffer.length < maxLag + 1) {
+      this.corrBuffer = new Float32Array(maxLag + 1);
+    }
+    const c = this.corrBuffer;
     for (let i = minLag; i <= maxLag; i++) {
       let sum = 0;
       for (let j = 0; j < SIZE - i; j++) sum += buf[j] * buf[j + i];

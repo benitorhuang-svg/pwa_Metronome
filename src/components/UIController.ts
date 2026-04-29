@@ -18,6 +18,9 @@ export class UIController {
   private animationFrameId: number | null = null;
   private isTunerTransitioning = false;
   private bpmSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private beatDots: HTMLElement[] = [];
+  private tunerBtnText: Text | null = null;
+  private static readonly VALID_TIME_SIGS: ReadonlyArray<number> = [2, 3, 4, 5, 6];
 
   constructor(metronome: Metronome, tuner: Tuner) {
     this.metronome = metronome;
@@ -57,6 +60,7 @@ export class UIController {
     this.bindThemeEvents();
     this.bindNavEvents();
     this.bindTunerEvents();
+    this.initTunerBtnContent();
     this.restoreState();
     this.setupVisibilityHandler();
     this.setupIOSAudioResume();
@@ -70,9 +74,8 @@ export class UIController {
     if (!isNaN(savedBPM) && savedBPM >= 30 && savedBPM <= 250) {
       this.updateBPM(savedBPM);
     }
-    const VALID_TIME_SIGS = [2, 3, 4, 5, 6];
     const savedTimeSig = parseInt(localStorage.getItem('metronome-timesig') ?? '', 10);
-    if (VALID_TIME_SIGS.includes(savedTimeSig)) {
+    if (UIController.VALID_TIME_SIGS.includes(savedTimeSig)) {
       this.metronome.beatsPerMeasure = savedTimeSig;
       this.elements.timeSigSelect.value = savedTimeSig.toString();
       this.createBeatDots();
@@ -112,7 +115,8 @@ export class UIController {
 
   private setupIOSAudioResume(): void {
     const resume = () => {
-      this.metronome.audioContext?.resume();
+      this.metronome.resumeContext();
+      this.tuner.resumeContext();
       document.removeEventListener('touchstart', resume);
     };
     document.addEventListener('touchstart', resume, { passive: true });
@@ -189,6 +193,16 @@ export class UIController {
     this.elements.btnTunerStart.onclick = () => this.toggleTuner();
   }
 
+  private initTunerBtnContent(): void {
+    const btn = this.elements.btnTunerStart;
+    btn.childNodes.forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) {
+        this.tunerBtnText = n as Text;
+        n.textContent = ' START MIC';
+      }
+    });
+  }
+
   private async toggleTuner(): Promise<void> {
     if (this.isTunerTransitioning) return;
     this.isTunerTransitioning = true;
@@ -219,11 +233,9 @@ export class UIController {
   }
 
   private setBtnTunerLabel(active: boolean): void {
-    const dot = document.createElement('div');
-    dot.className = 'mic-dot';
-    this.elements.btnTunerStart.textContent = '';
-    this.elements.btnTunerStart.appendChild(dot);
-    this.elements.btnTunerStart.appendChild(document.createTextNode(active ? ' STOP MIC' : ' START MIC'));
+    if (this.tunerBtnText) {
+      this.tunerBtnText.textContent = active ? ' STOP MIC' : ' START MIC';
+    }
   }
 
   private startUIAnimate(): void {
@@ -281,9 +293,8 @@ export class UIController {
     this.setupLongPress(this.elements.btnMinus, () => this.updateBPM(this.metronome.tempo - 1));
     this.setupLongPress(this.elements.btnPlus, () => this.updateBPM(this.metronome.tempo + 1));
     this.elements.timeSigSelect.onchange = (e) => {
-        const VALID_TIME_SIGS = [2, 3, 4, 5, 6];
         const beats = parseInt((e.target as HTMLSelectElement).value, 10);
-        if (VALID_TIME_SIGS.includes(beats)) {
+        if (UIController.VALID_TIME_SIGS.includes(beats)) {
           this.metronome.beatsPerMeasure = beats;
           this.createBeatDots();
           localStorage.setItem('metronome-timesig', beats.toString());
@@ -389,33 +400,30 @@ export class UIController {
 
   private createBeatDots(): void {
     this.elements.beatIndicators.innerHTML = '';
+    this.beatDots = [];
     for (let i = 0; i < this.metronome.beatsPerMeasure; i++) {
       const dot = document.createElement('div');
       dot.className = 'beat-dot';
       this.elements.beatIndicators.appendChild(dot);
+      this.beatDots.push(dot);
     }
   }
 
   private prevTickIndex: number = -1;
   private handleTick(index: number): void {
-    const dots = this.elements.beatIndicators.children;
-    if (this.prevTickIndex >= 0 && this.prevTickIndex < dots.length) {
-      const prev = dots[this.prevTickIndex] as HTMLElement;
-      prev.classList.remove('active', 'first-beat');
+    if (this.prevTickIndex >= 0 && this.prevTickIndex < this.beatDots.length) {
+      this.beatDots[this.prevTickIndex].classList.remove('active', 'first-beat');
     }
-    if (index < dots.length) {
-      const curr = dots[index] as HTMLElement;
-      curr.classList.add('active');
-      if (index === 0) curr.classList.add('first-beat');
+    if (index < this.beatDots.length) {
+      this.beatDots[index].classList.add('active');
+      if (index === 0) this.beatDots[index].classList.add('first-beat');
     }
     this.prevTickIndex = index;
   }
 
   private resetBeatDots(): void {
-    const dots = this.elements.beatIndicators.children;
-    for (let i = 0; i < dots.length; i++) {
-        const dot = dots[i] as HTMLElement;
-        dot.classList.remove('active', 'first-beat');
+    for (const dot of this.beatDots) {
+      dot.classList.remove('active', 'first-beat');
     }
   }
 }

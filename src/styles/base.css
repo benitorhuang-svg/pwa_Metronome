@@ -64,7 +64,7 @@
 }
 
 body {
-    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    font-family: 'Outfit Variable', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-deep);
     background-image: var(--bg-image);
     background-size: cover;

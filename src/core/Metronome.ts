@@ -6,21 +6,32 @@ import { createAudioContext } from '../utils/createAudioContext';
  * Atomic responsibility: Precise audio timing and state management.
  */
 export class Metronome {
-  public audioContext: AudioContext | null = null;
+  private audioContext: AudioContext | null = null;
   public isPlaying: boolean = false;
-  public tempo: number = 52;
-  public beatsPerMeasure: number = 4;
-  public currentBeat: number = 0;
-  
-  public nextNoteTime: number = 0.0;
+
+  private _tempo: number = 52;
+  get tempo(): number { return this._tempo; }
+  set tempo(val: number) { this._tempo = Math.max(30, Math.min(250, val)); }
+
+  private _beatsPerMeasure: number = 4;
+  get beatsPerMeasure(): number { return this._beatsPerMeasure; }
+  set beatsPerMeasure(val: number) { if (val >= 2 && val <= 6) this._beatsPerMeasure = val; }
+
+  private currentBeat: number = 0;
+  private nextNoteTime: number = 0.0;
   private timerWorker: Worker | null = null;
   
   private readonly LOOKAHEAD = 25.0;
   private readonly SCHEDULE_AHEAD_TIME = 0.1;
 
   public onTick: TickCallback | null = null;
+  public onStop: (() => void) | null = null;
 
   constructor() {}
+
+  public resumeContext(): void {
+    this.audioContext?.resume();
+  }
 
   private initAudio(): void {
     if (!this.audioContext) {
@@ -115,6 +126,8 @@ export class Metronome {
     }
     // Suspend context to free audio hardware while not playing
     this.audioContext?.suspend();
+    this.onStop?.();
+    this.onStop = null;
   }
 
   public toggle(): boolean {

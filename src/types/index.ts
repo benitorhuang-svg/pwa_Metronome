@@ -2,13 +2,6 @@
  * Global Types & Interfaces
  */
 
-export interface MetronomeState {
-  isPlaying: boolean;
-  tempo: number;
-  beatsPerMeasure: number;
-  currentBeat: number;
-}
-
 export type TickCallback = (beatIndex: number) => void;
 
 export interface UIElements {

@@ -33,6 +33,7 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
+    "@fontsource-variable/outfit": "^5.2.8",
     "workbox-window": "^7.4.0"
   }
 }

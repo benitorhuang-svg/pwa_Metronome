@@ -157,11 +157,29 @@ export class UIController {
     autumn: '#1a120b',
   };
 
+  private static readonly THEME_IMAGES: Record<string, string> = {
+    spring: 'spring.png',
+    pink:   'pink.png',
+    winter: 'winter.png',
+    autumn: 'autumn.png',
+  };
+
+  private applyThemeImage(theme: string): void {
+    const img = UIController.THEME_IMAGES[theme] ?? 'spring.png';
+    const base = import.meta.env.BASE_URL;
+    document.documentElement.style.setProperty(
+      '--bg-image',
+      `url('${base}assets/${img}')`
+    );
+  }
+
   private bindThemeEvents(): void {
     const savedTheme = localStorage.getItem('metronome-theme');
     if (savedTheme) {
       document.body.setAttribute('data-theme', savedTheme);
     }
+    // Apply the correct bg-image using runtime BASE_URL
+    this.applyThemeImage(savedTheme ?? 'spring');
     // Initialise aria-pressed on all theme buttons
     this.elements.themeBtns.forEach(b => {
       const isActive = b.getAttribute('data-theme') === (savedTheme ?? 'spring');
@@ -180,6 +198,7 @@ export class UIController {
         btn.setAttribute('aria-pressed', 'true');
         document.body.setAttribute('data-theme', theme);
         localStorage.setItem('metronome-theme', theme);
+        this.applyThemeImage(theme);
         // Keep PWA theme-color meta in sync with the active theme
         const metaThemeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
         if (metaThemeColor) {

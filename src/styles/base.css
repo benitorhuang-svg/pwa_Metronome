@@ -1,7 +1,8 @@
 :root {
     /* Default: Spring Sprout (New Default) */
     --bg-deep: #061a11;
-    --bg-image: url('/assets/spring.png');
+    /* --bg-image is set at runtime by UIController via import.meta.env.BASE_URL */
+    --bg-image: none;
     --card-bg: rgba(13, 42, 29, 0.7);
     --accent-blue: #22c55e;
     --accent-glow: rgba(34, 197, 94, 0.5);
@@ -17,7 +18,6 @@
 /* Pink: Cherry Blossom */
 [data-theme="pink"] {
     --bg-deep: #1a0f14;
-    --bg-image: url('/assets/pink.png');
     --card-bg: rgba(45, 27, 36, 0.7);
     --accent-blue: #f472b6;
     --accent-glow: rgba(244, 114, 182, 0.5);
@@ -31,7 +31,6 @@
 /* Winter: Snow White/Blue */
 [data-theme="winter"] {
     --bg-deep: #0f172a;
-    --bg-image: url('/assets/winter.png');
     --card-bg: rgba(30, 41, 59, 0.7);
     --accent-blue: #bae6fd;
     --accent-glow: rgba(186, 230, 253, 0.5);
@@ -45,7 +44,6 @@
 /* Autumn: Golden Yellow */
 [data-theme="autumn"] {
     --bg-deep: #1a120b;
-    --bg-image: url('/assets/autumn.png');
     --card-bg: rgba(45, 26, 11, 0.7);
     --accent-blue: #fbbf24;
     --accent-glow: rgba(251, 191, 36, 0.5);

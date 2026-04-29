@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "prepare": "husky"
+    "prepare": "node --eval \"process.env.CI||require('child_process').execSync('husky',{stdio:'inherit'})\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

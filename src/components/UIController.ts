@@ -16,6 +16,8 @@ export class UIController {
   private tuner: Tuner;
   private wakeLock: WakeLockSentinel | null = null;
   private animationFrameId: number | null = null;
+  private isTunerTransitioning = false;
+  private bpmSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(metronome: Metronome, tuner: Tuner) {
     this.metronome = metronome;
@@ -55,8 +57,65 @@ export class UIController {
     this.bindThemeEvents();
     this.bindNavEvents();
     this.bindTunerEvents();
-    
+    this.restoreState();
+    this.setupVisibilityHandler();
+    this.setupIOSAudioResume();
+    this.setupKeyboardShortcuts();
+
     this.metronome.onTick = (index) => this.handleTick(index);
+  }
+
+  private restoreState(): void {
+    const savedBPM = parseInt(localStorage.getItem('metronome-bpm') ?? '', 10);
+    if (!isNaN(savedBPM) && savedBPM >= 30 && savedBPM <= 250) {
+      this.updateBPM(savedBPM);
+    }
+    const VALID_TIME_SIGS = [2, 3, 4, 5, 6];
+    const savedTimeSig = parseInt(localStorage.getItem('metronome-timesig') ?? '', 10);
+    if (VALID_TIME_SIGS.includes(savedTimeSig)) {
+      this.metronome.beatsPerMeasure = savedTimeSig;
+      this.elements.timeSigSelect.value = savedTimeSig.toString();
+      this.createBeatDots();
+    }
+  }
+
+  private setupKeyboardShortcuts(): void {
+    document.addEventListener('keydown', (e) => {
+      // Ignore shortcuts when focus is inside an input/select
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          if (!this.elements.pageMetronome.classList.contains('hidden')) {
+            this.togglePlay();
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          this.updateBPM(this.metronome.tempo + 1);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          this.updateBPM(this.metronome.tempo - 1);
+          break;
+      }
+    });
+  }
+
+  private setupVisibilityHandler(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.metronome.isPlaying) {
+        this.requestWakeLock();
+      }
+    });
+  }
+
+  private setupIOSAudioResume(): void {
+    const resume = () => {
+      this.metronome.audioContext?.resume();
+      document.removeEventListener('touchstart', resume);
+    };
+    document.addEventListener('touchstart', resume, { passive: true });
   }
 
   private bindNavEvents(): void {
@@ -70,23 +129,58 @@ export class UIController {
       this.elements.pageTuner.classList.add('hidden');
       this.elements.navMetronome.classList.add('active');
       this.elements.navTuner.classList.remove('active');
+      this.elements.navMetronome.setAttribute('aria-current', 'page');
+      this.elements.navTuner.removeAttribute('aria-current');
       if (this.tuner.isActive) this.toggleTuner();
     } else {
       this.elements.pageMetronome.classList.add('hidden');
       this.elements.pageTuner.classList.remove('hidden');
       this.elements.navMetronome.classList.remove('active');
       this.elements.navTuner.classList.add('active');
+      this.elements.navTuner.setAttribute('aria-current', 'page');
+      this.elements.navMetronome.removeAttribute('aria-current');
       if (this.metronome.isPlaying) this.togglePlay();
+      // Reset needle to idle when entering tuner page
+      this.elements.mainNeedle.style.transform = 'translateX(-50%) rotate(-90deg)';
+      this.elements.tunerPointer.style.left = '50%';
     }
   }
 
+  private static readonly THEME_COLORS: Record<string, string> = {
+    spring: '#061a11',
+    pink:   '#1a0f14',
+    winter: '#0f172a',
+    autumn: '#1a120b',
+  };
+
   private bindThemeEvents(): void {
+    const savedTheme = localStorage.getItem('metronome-theme');
+    if (savedTheme) {
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    // Initialise aria-pressed on all theme buttons
+    this.elements.themeBtns.forEach(b => {
+      const isActive = b.getAttribute('data-theme') === (savedTheme ?? 'spring');
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-pressed', String(isActive));
+    });
+
     this.elements.themeBtns.forEach(btn => {
       btn.onclick = () => {
         const theme = btn.getAttribute('data-theme')!;
-        this.elements.themeBtns.forEach(b => b.classList.remove('active'));
+        this.elements.themeBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('metronome-theme', theme);
+        // Keep PWA theme-color meta in sync with the active theme
+        const metaThemeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+        if (metaThemeColor) {
+          metaThemeColor.content = UIController.THEME_COLORS[theme] ?? '#161e2e';
+        }
       };
     });
   }
@@ -96,23 +190,40 @@ export class UIController {
   }
 
   private async toggleTuner(): Promise<void> {
-    if (this.tuner.isActive) {
-      this.tuner.stop();
-      this.stopUIAnimate();
-      this.elements.btnTunerStart.classList.remove('active');
-      this.elements.btnTunerStart.innerHTML = '<div class="mic-dot"></div> START MIC';
-      this.elements.noteName.innerText = '';
-      this.elements.noteCents.innerText = 'Waiting for input';
-      this.elements.mainNeedle.style.transform = 'translateX(-50%) rotate(-90deg)';
-      this.elements.tunerPointer.style.left = '50%';
-    } else {
-      const success = await this.tuner.start();
-      if (success) {
-        this.elements.btnTunerStart.classList.add('active');
-        this.elements.btnTunerStart.innerHTML = '<div class="mic-dot"></div> STOP MIC';
-        this.startUIAnimate();
+    if (this.isTunerTransitioning) return;
+    this.isTunerTransitioning = true;
+    try {
+      if (this.tuner.isActive) {
+        this.tuner.stop();
+        this.stopUIAnimate();
+        this.elements.btnTunerStart.classList.remove('active');
+        this.setBtnTunerLabel(false);
+        this.elements.noteName.textContent = '';
+        this.elements.noteName.style.color = '';
+        this.elements.noteName.classList.remove('in-tune');
+        this.elements.noteCents.textContent = 'Waiting for input';
+        this.elements.freqDisplay.textContent = '0.00 Hz';
+        this.elements.mainNeedle.style.transform = 'translateX(-50%) rotate(-90deg)';
+        this.elements.tunerPointer.style.left = '50%';
+      } else {
+        const success = await this.tuner.start();
+        if (success) {
+          this.elements.btnTunerStart.classList.add('active');
+          this.setBtnTunerLabel(true);
+          this.startUIAnimate();
+        }
       }
+    } finally {
+      this.isTunerTransitioning = false;
     }
+  }
+
+  private setBtnTunerLabel(active: boolean): void {
+    const dot = document.createElement('div');
+    dot.className = 'mic-dot';
+    this.elements.btnTunerStart.textContent = '';
+    this.elements.btnTunerStart.appendChild(dot);
+    this.elements.btnTunerStart.appendChild(document.createTextNode(active ? ' STOP MIC' : ' START MIC'));
   }
 
   private startUIAnimate(): void {
@@ -140,9 +251,9 @@ export class UIController {
   private updateTunerUI(): void {
     const data = this.tuner.getPitchData();
     if (data) {
-      this.elements.noteName.innerText = data.note;
-      this.elements.noteCents.innerText = `${data.cents > 0 ? '+' : ''}${data.cents} cents`;
-      this.elements.freqDisplay.innerText = `${data.pitch.toFixed(2)} Hz`;
+      this.elements.noteName.textContent = data.note;
+      this.elements.noteCents.textContent = `${data.cents > 0 ? '+' : ''}${data.cents} cents`;
+      this.elements.freqDisplay.textContent = `${data.pitch.toFixed(2)} Hz`;
       
       const percentage = (data.cents + 50);
       this.elements.tunerPointer.style.left = `${percentage}%`;
@@ -151,15 +262,13 @@ export class UIController {
       const rotation = (data.cents / 50) * 80; 
       this.elements.mainNeedle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
 
-      if (Math.abs(data.cents) < 5) {
-        this.elements.noteName.style.color = 'var(--accent-blue)';
-      } else {
-        this.elements.noteName.style.color = '#fff';
-      }
+      // Toggle CSS class instead of mutating inline style (avoids forced style recalc)
+      this.elements.noteName.classList.toggle('in-tune', Math.abs(data.cents) < 5);
     } else {
       // Idle state: Needle lies flat
       this.elements.mainNeedle.style.transform = 'translateX(-50%) rotate(-90deg)';
-      this.elements.noteName.innerText = '';
+      this.elements.noteName.textContent = '';
+      this.elements.noteName.classList.remove('in-tune');
     }
   }
 
@@ -169,23 +278,38 @@ export class UIController {
     this.elements.btnPlus.onclick = () => this.updateBPM(this.metronome.tempo + 1);
     this.elements.btnPlay.onclick = () => this.togglePlay();
     this.elements.btnTap.onclick = () => this.handleTap();
+    this.setupLongPress(this.elements.btnMinus, () => this.updateBPM(this.metronome.tempo - 1));
+    this.setupLongPress(this.elements.btnPlus, () => this.updateBPM(this.metronome.tempo + 1));
     this.elements.timeSigSelect.onchange = (e) => {
-        this.metronome.beatsPerMeasure = parseInt((e.target as HTMLSelectElement).value);
-        this.createBeatDots();
+        const VALID_TIME_SIGS = [2, 3, 4, 5, 6];
+        const beats = parseInt((e.target as HTMLSelectElement).value, 10);
+        if (VALID_TIME_SIGS.includes(beats)) {
+          this.metronome.beatsPerMeasure = beats;
+          this.createBeatDots();
+          localStorage.setItem('metronome-timesig', beats.toString());
+        }
     };
   }
 
   private updateBPM(val: string | number): void {
-    const bpm = typeof val === 'string' ? parseInt(val) : val;
-    this.metronome.tempo = bpm;
-    this.elements.bpmDisplay.innerText = bpm.toString();
-    this.elements.bpmSlider.value = bpm.toString();
+    const bpm = typeof val === 'string' ? parseInt(val, 10) : val;
+    if (isNaN(bpm)) return;
+    const clamped = Math.max(30, Math.min(250, bpm));
+    this.metronome.tempo = clamped;
+    this.elements.bpmDisplay.textContent = clamped.toString();
+    this.elements.bpmSlider.value = clamped.toString();
+    // Debounce localStorage writes to avoid excessive I/O during slider drag
+    if (this.bpmSaveTimer) clearTimeout(this.bpmSaveTimer);
+    this.bpmSaveTimer = setTimeout(() => {
+      localStorage.setItem('metronome-bpm', clamped.toString());
+      this.bpmSaveTimer = null;
+    }, 300);
   }
 
   private togglePlay(): void {
     const isPlaying = this.metronome.toggle();
     this.elements.btnPlay.classList.toggle('playing', isPlaying);
-    this.elements.playText.innerText = isPlaying ? 'STOP' : 'START';
+    this.elements.playText.textContent = isPlaying ? 'STOP' : 'START';
     this.elements.playIcon.className = isPlaying ? 'icon-square' : 'icon-play';
     
     if (isPlaying) {
@@ -209,22 +333,58 @@ export class UIController {
     }
   }
 
-  private releaseWakeLock() {
+  private setupLongPress(btn: HTMLButtonElement, action: () => void): void {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const start = () => {
+      timeoutId = setTimeout(() => {
+        intervalId = setInterval(action, 80);
+      }, 400);
+    };
+    const stop = () => {
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    };
+
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', start, { passive: true });
+    btn.addEventListener('mouseup', stop);
+    btn.addEventListener('mouseleave', stop);
+    btn.addEventListener('touchend', stop);
+    btn.addEventListener('touchcancel', stop);
+  }
+
+  private releaseWakeLock(): void {
     if (this.wakeLock) {
       this.wakeLock.release().then(() => {
+        this.wakeLock = null;
+      }).catch((err) => {
+        if (err instanceof Error) console.error(`WakeLock release failed: ${err.message}`);
         this.wakeLock = null;
       });
     }
   }
 
-  private lastTap = 0;
+  private tapTimes: number[] = [];
   private handleTap(): void {
     const now = Date.now();
-    if (this.lastTap) {
-      const bpm = Math.round(60000 / (now - this.lastTap));
+    // Reset if idle for more than 3 seconds
+    if (this.tapTimes.length > 0 && now - this.tapTimes[this.tapTimes.length - 1] > 3000) {
+      this.tapTimes = [];
+    }
+    this.tapTimes.push(now);
+    // Keep only last 6 taps
+    if (this.tapTimes.length > 6) this.tapTimes.shift();
+    if (this.tapTimes.length >= 2) {
+      let totalInterval = 0;
+      for (let i = 1; i < this.tapTimes.length; i++) {
+        totalInterval += this.tapTimes[i] - this.tapTimes[i - 1];
+      }
+      const avgInterval = totalInterval / (this.tapTimes.length - 1);
+      const bpm = Math.round(60000 / avgInterval);
       if (bpm >= 30 && bpm <= 250) this.updateBPM(bpm);
     }
-    this.lastTap = now;
   }
 
   private createBeatDots(): void {
@@ -236,20 +396,26 @@ export class UIController {
     }
   }
 
+  private prevTickIndex: number = -1;
   private handleTick(index: number): void {
     const dots = this.elements.beatIndicators.children;
-    for (let i = 0; i < dots.length; i++) {
-        const dot = dots[i] as HTMLElement;
-        dot.classList.toggle('active', i === index);
-        dot.classList.toggle('first-beat', i === 0 && i === index);
+    if (this.prevTickIndex >= 0 && this.prevTickIndex < dots.length) {
+      const prev = dots[this.prevTickIndex] as HTMLElement;
+      prev.classList.remove('active', 'first-beat');
     }
+    if (index < dots.length) {
+      const curr = dots[index] as HTMLElement;
+      curr.classList.add('active');
+      if (index === 0) curr.classList.add('first-beat');
+    }
+    this.prevTickIndex = index;
   }
 
   private resetBeatDots(): void {
     const dots = this.elements.beatIndicators.children;
     for (let i = 0; i < dots.length; i++) {
         const dot = dots[i] as HTMLElement;
-        dot.classList.remove('active');
+        dot.classList.remove('active', 'first-beat');
     }
   }
 }

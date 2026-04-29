@@ -4,8 +4,8 @@
     height: 840px; /* Desktop fixed height */
     max-height: 90vh; /* Don't exceed viewport height */
     background: var(--card-bg);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-card);
     border-radius: 64px;
     padding: 48px 32px 32px;
@@ -16,7 +16,8 @@
     align-items: center;
     position: relative;
     overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (max-width: 480px) {
@@ -29,16 +30,19 @@
         height: 100dvh;
         max-height: 100dvh;
         border-radius: 0;
-        padding: 60px 24px env(safe-area-inset-bottom, 32px);
+        padding: env(safe-area-inset-top, 16px) 24px env(safe-area-inset-bottom, 16px);
     }
 }
 
 .page-content {
     width: 100%;
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
     transition: opacity 0.3s ease;
 }
 
@@ -52,7 +56,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 48px;
+    margin-bottom: clamp(16px, 4vh, 48px);
 }
 
 /* Glassmorphic Time Signature */
@@ -77,18 +81,27 @@
     background: transparent;
     border: none;
     color: #fff;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     font-weight: 800;
     font-size: 16px;
     cursor: pointer;
     outline: none;
-    padding: 0 24px 0 0;
+    padding: 0 28px 0 0;
     width: 100%;
 }
 
 .time-signature select option {
     background-color: #0f172a;
     color: #fff;
+}
+
+/* Chevron is purely decorative — must never capture pointer events */
+.time-signature svg {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
 }
 
 .tempo-controls {
@@ -98,7 +111,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 40px;
+    margin-bottom: clamp(16px, 4vh, 40px);
 }
 
 .slider-container {
@@ -110,7 +123,7 @@
     display: flex;
     flex-direction: row;
     gap: 12px;
-    margin-bottom: 30px;
+    margin-bottom: 0;
 }
 
 /* Glassmorphic Blocks (Removing "White Blocks") */
@@ -121,7 +134,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     color: #fff;
-    transition: all 0.3s ease;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .control-btn {
@@ -194,7 +207,7 @@ input[type="range"]::-webkit-slider-thumb {
     display: flex;
     justify-content: center;
     gap: 16px;
-    margin-bottom: clamp(20px, 5vh, 40px);
+    margin-bottom: clamp(12px, 4vh, 40px);
     min-height: 20px;
 }
 
@@ -204,7 +217,7 @@ input[type="range"]::-webkit-slider-thumb {
     height: clamp(8px, 2vw, 12px);
     background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    transition: all 0.2s;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .beat-dot.active {
@@ -233,7 +246,7 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 3px;
-    margin-bottom: clamp(20px, 5vh, 40px);
+    margin-bottom: clamp(12px, 3vh, 40px);
 }
 
 /* Tuner UI */
@@ -263,6 +276,11 @@ input[type="range"]::-webkit-slider-thumb {
     animation: pulse 1.5s infinite;
 }
 
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
 .tuner-display {
     width: 100%;
     background: rgba(255, 255, 255, 0.03);
@@ -270,8 +288,8 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 48px;
-    padding: clamp(20px, 8vh, 40px) 20px;
-    margin-bottom: clamp(20px, 8vh, 48px);
+    padding: clamp(12px, 4vh, 40px) 20px;
+    margin-bottom: clamp(12px, 4vh, 48px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -310,7 +328,7 @@ input[type="range"]::-webkit-slider-thumb {
     stroke: var(--accent-blue);
     stroke-width: 12;
     stroke-linecap: round;
-    transition: all 0.1s ease;
+    transition: stroke 0.1s ease, opacity 0.1s ease;
 }
 
 .center-line {
@@ -332,6 +350,7 @@ input[type="range"]::-webkit-slider-thumb {
     z-index: 2;
     transition: transform 0.15s cubic-bezier(0.1, 0, 0.2, 1);
     box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    will-change: transform;
 }
 
 .main-needle::after {
@@ -348,7 +367,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .note-name {
-    font-size: 100px; /* Reduced to fit in arc */
+    font-size: clamp(60px, 22vw, 100px);
     font-weight: 800;
     line-height: 1;
     color: rgba(255, 255, 255, 0.95);
@@ -395,6 +414,12 @@ input[type="range"]::-webkit-slider-thumb {
     transform: translateX(-50%);
     transition: left 0.1s;
     box-shadow: 0 0 15px var(--accent-blue);
+    will-change: left;
+}
+
+/* In-tune accent: applied via JS class toggle */
+.note-name.in-tune {
+    color: var(--accent-blue);
 }
 
 .tuner-footer {
@@ -411,7 +436,7 @@ input[type="range"]::-webkit-slider-thumb {
     text-align: center;
 }
 
-.info-block label {
+.info-block .info-label {
     display: block;
     font-size: 10px;
     font-weight: 800;
@@ -423,7 +448,8 @@ input[type="range"]::-webkit-slider-thumb {
 .theme-switcher {
     display: flex;
     gap: 12px;
-    margin: 30px 0;
+    margin: 12px 0;
+    flex-shrink: 0;
 }
 
 .theme-btn {
@@ -432,7 +458,7 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 50%;
     border: 3px solid transparent;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.2s, transform 0.2s;
 }
 
 .theme-btn.active {
@@ -444,13 +470,19 @@ input[type="range"]::-webkit-slider-thumb {
 .app-nav {
     display: flex;
     gap: 8px;
-    width: 60%; /* More compact at the top */
-    margin-bottom: 32px;
+    width: 60%;
+    margin-bottom: clamp(12px, 3vh, 32px);
     padding: 6px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 20px;
     backdrop-filter: blur(10px);
+}
+
+@media (max-width: 480px) {
+    .app-nav {
+        width: 70%;
+    }
 }
 
 .nav-item {
@@ -465,7 +497,7 @@ input[type="range"]::-webkit-slider-thumb {
     text-align: center;
     border: none;
     background: transparent;
-    transition: all 0.3s;
+    transition: background 0.3s, color 0.3s, box-shadow 0.3s;
 }
 
 .nav-item.active {

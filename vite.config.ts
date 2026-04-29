@@ -5,8 +5,12 @@ export default defineConfig({
   base: './',
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      // SW is registered manually via workbox-window in main.ts
+      injectRegister: false,
+      // 'prompt' keeps the generated SW from auto-calling skipWaiting;
+      // workbox-window sends messageSkipWaiting() when the user confirms.
+      registerType: 'prompt',
+      includeAssets: ['favicon.ico'],
       manifest: {
         name: 'Metronome Pro',
         short_name: 'Metronome',
@@ -16,20 +20,58 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'assets/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            src: 'assets/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'assets/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
           },
           {
             src: 'assets/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'assets/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
+        ]
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            // Cache Google Fonts CSS
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+          {
+            // Cache Google Fonts webfont files
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
           }
         ]
       },
       devOptions: {
-        enabled: true,
+        // Keep SW disabled in dev to avoid conflicts with Vite HMR
+        enabled: false,
         type: 'module'
       }
     })

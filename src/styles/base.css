@@ -64,20 +64,22 @@
 }
 
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-deep);
     background-image: var(--bg-image);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     color: var(--text-main);
-    height: 100vh;
+    height: 100vh; /* fallback for browsers without dvh support */
+    height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     padding: 20px;
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                background-image 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body::before {

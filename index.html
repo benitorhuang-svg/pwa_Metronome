@@ -2,22 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Metronome Pro</title>
     <meta name="theme-color" content="#161e2e">
-    <link rel="apple-touch-icon" href="/assets/icon-512.png">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
     
     <!-- Fonts are handled by CSS imports or link tags -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Load fonts non-render-blocking; swap to all-media once loaded -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet"></noscript>
 </head>
 <body>
 
     <div class="metronome-container">
         <!-- SHARED: Navigation (Moved to Top) -->
         <nav class="app-nav">
-            <button id="nav-metronome" class="nav-item active">METRO</button>
+            <button id="nav-metronome" class="nav-item active" aria-current="page">METRO</button>
             <button id="nav-tuner" class="nav-item">TUNER</button>
         </nav>
 
@@ -46,12 +49,12 @@
             <div class="beat-indicators" id="beat-indicators"></div>
 
             <div class="bpm-container">
-                <div class="bpm-number" id="bpm-display">52</div>
+                <div class="bpm-number" id="bpm-display" aria-live="polite" aria-atomic="true">52</div>
                 <div class="bpm-label">Beats Per Minute</div>
             </div>
 
             <div class="tempo-controls">
-                <button class="control-btn" id="btn-minus" aria-label="Decrease BPM">
+                <button type="button" class="control-btn" id="btn-minus" aria-label="Decrease BPM">
                     <svg width="20" height="4" viewBox="0 0 20 4" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="20" height="4" rx="2" fill="white"/>
                     </svg>
@@ -59,7 +62,7 @@
                 <div class="slider-container">
                     <input type="range" id="bpm-slider" min="30" max="250" value="52" aria-label="Tempo Slider">
                 </div>
-                <button class="control-btn" id="btn-plus" aria-label="Increase BPM">
+                <button type="button" class="control-btn" id="btn-plus" aria-label="Increase BPM">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect y="8" width="20" height="4" rx="2" fill="white"/>
                         <rect x="8" width="4" height="20" rx="2" fill="white"/>
@@ -68,8 +71,8 @@
             </div>
 
             <div class="action-buttons">
-                <button class="tap-btn" id="btn-tap">Tap</button>
-                <button class="play-btn" id="btn-play">
+                <button type="button" class="tap-btn" id="btn-tap">Tap</button>
+                <button type="button" class="play-btn" id="btn-play">
                     <div id="play-icon" class="icon-play"></div>
                     <span id="play-text">START</span>
                 </button>
@@ -83,7 +86,7 @@
                     <h1>Tuner</h1>
                     <p>Perfect Pitch</p>
                 </div>
-                <button id="btn-tuner-start" class="tuner-start-btn">
+                <button type="button" id="btn-tuner-start" class="tuner-start-btn">
                     <div class="mic-dot"></div>
                     START MIC
                 </button>
@@ -113,11 +116,11 @@
 
             <div class="tuner-footer">
                 <div class="info-block">
-                    <label>Frequency</label>
+                    <span class="info-label">Frequency</span>
                     <div id="freq-display">0.00 Hz</div>
                 </div>
                 <div class="info-block">
-                    <label>A4 Standard</label>
+                    <span class="info-label">A4 Standard</span>
                     <div>440 Hz</div>
                 </div>
             </div>
@@ -129,8 +132,6 @@
             <button class="theme-btn" data-theme="pink" title="Cherry Blossom" style="background: #f472b6;"></button>
             <button class="theme-btn" data-theme="winter" title="Winter" style="background: #bae6fd;"></button>
             <button class="theme-btn" data-theme="autumn" title="Autumn" style="background: #fbbf24;"></button>
-        </div>
-
         </div>
     </div>
 

@@ -1,4 +1,5 @@
 import { TickCallback } from '../types';
+import { createAudioContext } from '../utils/createAudioContext';
 
 /**
  * Metronome Core Engine
@@ -23,7 +24,7 @@ export class Metronome {
 
   private initAudio(): void {
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      this.audioContext = createAudioContext();
     }
   }
 
@@ -77,6 +78,8 @@ export class Metronome {
     if (this.isPlaying) return;
 
     this.initAudio();
+    // Resume in case context was suspended after a previous stop
+    this.audioContext?.resume();
     this.isPlaying = true;
     this.currentBeat = 0;
     this.nextNoteTime = this.audioContext!.currentTime + 0.05;
@@ -94,7 +97,9 @@ export class Metronome {
     `;
 
     const blob = new Blob([workerScript], { type: "application/javascript" });
-    this.timerWorker = new Worker(URL.createObjectURL(blob));
+    const workerUrl = URL.createObjectURL(blob);
+    this.timerWorker = new Worker(workerUrl);
+    URL.revokeObjectURL(workerUrl);
     this.timerWorker.onmessage = (e) => {
       if (e.data === "tick") this.scheduler();
     };
@@ -108,6 +113,8 @@ export class Metronome {
       this.timerWorker.terminate();
       this.timerWorker = null;
     }
+    // Suspend context to free audio hardware while not playing
+    this.audioContext?.suspend();
   }
 
   public toggle(): boolean {

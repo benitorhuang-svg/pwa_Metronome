@@ -65,8 +65,49 @@ export class UIController {
     this.setupVisibilityHandler();
     this.setupIOSAudioResume();
     this.setupKeyboardShortcuts();
+    this.setupLogoLongPress();
 
     this.metronome.onTick = (index) => this.handleTick(index);
+  }
+
+  /** Long-press the app title (h1) for 3 s to force a SW update check — mobile-friendly. */
+  private setupLogoLongPress(): void {
+    const logo = document.querySelector<HTMLElement>('h1');
+    if (!logo) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const start = () => {
+      timer = setTimeout(() => {
+        timer = null;
+        const trigger = (window as unknown as Record<string, unknown>)['__wb_update'];
+        if (typeof trigger === 'function') {
+          trigger();
+          this.showToast('Checking for updates…');
+        }
+      }, 3000);
+    };
+    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+
+    logo.addEventListener('touchstart', start, { passive: true });
+    logo.addEventListener('touchend', cancel);
+    logo.addEventListener('touchcancel', cancel);
+    logo.addEventListener('mousedown', start);
+    logo.addEventListener('mouseup', cancel);
+    logo.addEventListener('mouseleave', cancel);
+  }
+
+  private showToast(message: string): void {
+    const el = document.createElement('div');
+    el.textContent = message;
+    el.className = 'update-toast';
+    document.body.appendChild(el);
+    // Trigger reflow for transition
+    el.getBoundingClientRect();
+    el.classList.add('update-toast--visible');
+    setTimeout(() => {
+      el.classList.remove('update-toast--visible');
+      el.addEventListener('transitionend', () => el.remove(), { once: true });
+    }, 2500);
   }
 
   private restoreState(): void {

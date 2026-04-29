@@ -36,6 +36,9 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   });
 
   wb.register();
+
+  // Expose update trigger for in-app long-press gesture (mobile-friendly)
+  (window as unknown as Record<string, unknown>)['__wb_update'] = () => wb.update();
 }
 
 if (document.readyState === 'loading') {
